@@ -1,0 +1,11 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon Mark: Overlapping documents -->
+  <path d="M10 10V50H40V10H10Z" stroke="#4F46E5" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M20 5V45H50V5H20Z" fill="#0F172A" stroke="#06B6D4" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Diff Indicator symbol (≠) -->
+  <path d="M28 20H42M28 30H42M25 35L45 15" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Wordmark -->
+  <text x="65" y="42" fill="#4F46E5" style="font-family:Arial;font-weight:bold;font-size:32px;letter-spacing:-1px;">AURA</text>
+  <text x="156" y="42" fill="#06B6D4" style="font-family:Arial;font-weight:bold;font-size:32px;letter-spacing:-1px;">DIFF</text>
+</svg>

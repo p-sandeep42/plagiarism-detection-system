@@ -1,0 +1,485 @@
+
+AURADIFF
+Multi-Algorithmic Plagiarism & Code-Similarity Detection
+Standard Operating Procedure  ·  Version 2.0  ·  AI-Optimised Edition
+This SOP is purpose-built to instruct AI agents (Claude, Gemini, GPT, Firebase Genkit, etc.) on how to optimise, extend, and deploy AuraDiff without hallucination.
+
+§0  AI Instruction Manifesto & Anti-Hallucination Rules
+This section MUST be read first by any AI agent before acting on instructions in this SOP. All tasks derived from this document are subject to the following constraints.
+
+
+0.1  Skill Definitions (Anti-Hallucination Guards)
+The following named skills are referenced throughout this SOP. AI agents must apply the exact skill protocol when the skill tag appears.
+
+
+
+
+§1  Branding, Visual Identity & Website Architecture
+1.1  Brand Identity [SKILL:UI-BRAND]
+Every AI-generated UI component, email template, and documentation page must strictly adhere to the following identity system.
+
+
+1.2  Logo Construction Instructions
+The AuraDiff logo is constructed in SVG/JSX (no external image files for the wordmark). AI must generate it programmatically as follows:
+Wordmark: "AURA" in Indigo-600, bold, tracking-tight + "Diff" in Cyan-500, bold
+Icon mark: Two overlapping document silhouettes with a small diff-indicator symbol (≠) in the centre, coloured Indigo-600/Cyan-500 split
+Minimum size: 32px height for navbar, 64px for hero, 24px for favicon
+File output: /public/logo.svg (scalable), /public/favicon.ico (converted from SVG)
+Never use rasterised PNG logos — must remain vector
+
+1.3  Page Architecture & Route Map
+The Next.js 14 App Router structure must match the following. AI agents must not create additional top-level routes without approval.
+
+
+
+
+§2  Dynamic Landing Page — Component Specifications
+The landing page must be a world-class marketing page that demonstrates AuraDiff's capabilities live, ranks well on Google, and converts visitors to users. All sections scroll-animate using Framer Motion [SKILL:ANIMATION].
+
+2.1  Hero Section
+The hero must be the most visually impactful element of the site. AI must implement the following exactly:
+Full-viewport height (min-h-screen) with a dark gradient background: from-slate-950 via-indigo-950 to-slate-900
+Animated headline using Framer Motion staggered character animation: 'Detect Plagiarism. Instantly.' — 'Detect' in white, 'Plagiarism.' in Indigo-400, 'Instantly.' typed-effect in Cyan-400
+Sub-headline: 'Three AI algorithms. One truth.' — fade-in after headline with 0.6s delay
+Two CTAs: Primary 'Analyse Now' (Indigo-600 filled, shadow-lg) and Secondary 'See It Live' (ghost border-indigo-400) — both link to /compare
+Background: floating animated particles (React-TSParticles or CSS keyframe dots), very subtle, opacity 0.15
+Hero includes a floating mini-preview of the split-view dashboard that animates in from the right with spring physics
+
+2.2  Algorithm Showcase Section [SKILL:ALGO-DOC]
+This is the centrepiece educational section. It must show all three algorithms operating on a live, embedded micro-demo using hardcoded sample texts.
+
+
+2.3  Statistics / Trust Bar
+Animated counters on scroll-enter: '3 Algorithms', '99.2% Accuracy', '<2s Response', 'Unlimited Files'
+Use CountUp.js (or a custom React hook) — never hardcode static numbers
+Dark background (slate-900), border-top/bottom in Indigo-800
+
+2.4  Creator / Team Section
+The creator section showcases the four developers from Vignan Institute of Technology and Science. This section must appear on both the landing page and the /about route. [SKILL:UI-BRAND]
+
+
+Each creator card must: (1) have a hover scale animation (scale-105), (2) show a GitHub/LinkedIn icon row, (3) pop in with staggered delay (0s, 0.1s, 0.2s, 0.3s) using Framer Motion. Avatar placeholder is a gradient circle with initials.
+
+2.5  Scroll Animation Specification [SKILL:ANIMATION]
+Every section block on the landing page must apply the following Framer Motion pattern. AI must NOT use CSS @keyframes as the primary animation mechanism.
+
+
+
+
+§3  Search Engine Optimisation [SKILL:SEO]
+AuraDiff must rank for plagiarism detection, code similarity checker, and academic integrity tool queries. All SEO is implemented via the Next.js 14 Metadata API — never via react-helmet or <Head>.
+
+3.1  Metadata Configuration
+
+3.2  JSON-LD Structured Data
+Add SoftwareApplication schema on the root layout
+Add FAQPage schema on /about with algorithm FAQs
+Add BreadcrumbList on /compare and /batch
+Use next/script with strategy='afterInteractive' for JSON-LD injection
+
+3.3  Performance (Core Web Vitals)
+LCP target: < 2.5s — Hero image must use Next.js <Image> with priority prop
+CLS: 0 — all animation containers must have explicit height/min-height set
+FID/INP: Defer all non-critical JS (algorithm demo scripts load on scroll)
+Use next/font for Inter to eliminate layout shift from font loading
+sitemap.xml and robots.txt must be generated via app/sitemap.ts and app/robots.ts
+
+
+
+§4  Firebase-Ready Backend Architecture [SKILL:FIREBASE]
+The project must be architected so that Firebase (Firestore, Cloud Functions, Firebase Storage) or any other BaaS can replace or supplement the FastAPI backend with zero changes to the frontend component tree.
+
+4.1  Abstraction Layer
+
+4.2  Firebase Cloud Function Specification
+If Firebase is chosen, the Cloud Function must mirror the FastAPI endpoint contract exactly. AI must implement the following function signature:
+Function name: compareDocuments (callable)
+Input: { fileA: base64string, fileB: base64string, fileTypeA: string, fileTypeB: string }
+Output: ComparisonResponse (identical schema to FastAPI — see §6.1)
+Timeout: 540 seconds (max) — semantic model loading requires extra time
+Memory: 2GiB — required for sentence-transformers inference
+Runtime: Python 3.11 — use functions-framework
+
+4.3  Firestore Schema (Optional Caching)
+To avoid re-running expensive semantic comparisons, results can be cached in Firestore using a content-hash key:
+Collection: comparison_cache
+Document ID: SHA-256(fileA_content + fileB_content) — computed server-side
+Fields: scores (map), highlights (array), created_at (timestamp), ttl (7 days)
+AI must add cache-check logic to the Cloud Function BEFORE running algorithms
+
+
+
+§5  Multi-Student Batch Comparison Feature [SKILL:MULTI-COMP]
+This is the most important new feature in this SOP. It transforms AuraDiff from a pairwise tool into a classroom-scale plagiarism detection system. AI must follow every specification exactly.
+
+
+5.1  User Experience Flow
+User navigates to /batch
+Multi-file drop zone accepts N files (PDF, DOCX, .py, .js, .txt). Maximum 30 files per batch.
+User clicks 'Run Batch Analysis'. Progress bar appears with live percentage.
+Result: a Student Matrix Grid — N×N grid of pairwise similarity scores.
+User clicks any student's name/card to expand their individual detail panel.
+Detail panel shows: the student's highest-plagiarism match, full Dashboard.tsx score breakdown, and SplitView.tsx comparison against the most-similar peer.
+
+5.2  Student Matrix Grid — Component Specification
+The StudentMatrix component (components/batch/StudentMatrix.tsx) is the primary UI for the batch feature.
+
+
+5.3  StudentDetailPanel — Component Specification
+When a user clicks a student name in the matrix, StudentDetailPanel (components/batch/StudentDetailPanel.tsx) slides in from the right as a side-drawer.
+Header: student name, file name, overall risk level badge (Low/Medium/High/Critical)
+Tab 1 — 'Score Overview': renders existing Dashboard.tsx with the student's worst-case pairwise scores injected as props
+Tab 2 — 'Side-by-Side': renders existing SplitView.tsx comparing the student's file against their highest-matching peer
+Tab 3 — 'All Comparisons': table listing every peer, their pairwise total_score, and a mini bar chart
+Animation: Framer Motion slide-in from right (x: '100%' → x: 0) with backdrop blur overlay
+
+5.4  Backend: /compare-batch Endpoint
+
+5.5  Performance Strategy for Batch
+Parallelise algorithm runs: use Python asyncio + concurrent.futures.ThreadPoolExecutor
+Cache parsed file content in memory per request to avoid re-parsing
+Semantic model loaded once at startup (app startup event), not per-request
+WebSocket endpoint /ws/batch-progress streams { completed, total, current_pair } JSON messages
+Frontend uses native WebSocket API (not socket.io) to display live progress
+
+
+
+§6  Data Schemas & API Contracts [SKILL:ALGO-DOC]
+6.1  Existing ComparisonResponse (Do NOT modify)
+
+
+
+§7  Project Scaling & Production-Readiness
+7.1  Backend Scaling
+Containerise FastAPI with Docker — provide Dockerfile in repo root
+Use Gunicorn + Uvicorn workers: gunicorn -k uvicorn.workers.UvicornWorker -w 4
+Load the sentence-transformers model once at startup; use model pool if multi-worker
+Add Redis caching layer for repeat comparisons (key = hash of both file contents)
+Deploy on Cloud Run (GCP) or Railway.app for automatic horizontal scaling
+
+7.2  Frontend Scaling
+Enable Next.js ISR (Incremental Static Regeneration) for the /about page
+Use Next.js Image Optimisation for all team photos and OG images
+Bundle analysis: run next build && npx @next/bundle-analyzer — target < 150kB first load JS
+CDN: Deploy on Vercel; configure Cache-Control: s-maxage=3600 for static assets
+
+7.3  Monitoring & Observability
+Add Sentry for both Next.js (client+server) and FastAPI error tracking
+API latency tracking: log p50/p95/p99 for /compare and /compare-batch
+Vercel Analytics for Web Vitals (CWV) tracking in production
+
+7.4  Extensibility Checklist for New Algorithms
+When adding a 4th algorithm, AI must follow this exact checklist to prevent breaking existing functionality:
+Create backend/algorithms/new_algo.py with a function compare(text_a, text_b) -> float
+Add new_score field to ComparisonResponse in schemas.py
+Update main.py weight dict: ensure all weights still sum to 1.0
+Add new_score to Dashboard.tsx radar chart data array
+Add new highlight colour token to design tokens (§1.1)
+Update SplitView.tsx legend
+Add unit test in tests/test_new_algo.py
+
+
+
+§8  Master Implementation Checklist
+AI agents must tick every item below before declaring any task complete. Each item references the relevant SOP section.
+
+
+
+
+§9  Document Sign-Off
+This SOP is authored by the AuraDiff project team at Vignan Institute of Technology and Science. It is the authoritative reference for all AI-assisted development on this codebase.
+
+
+
+Document Version: 2.0  ·  AI-Optimised Edition  ·  AuraDiff © 2024–2025 Vignan Institute of Technology and Science, CSE Department.
+Project Team
+P. Sandeep
+Mahathi
+Lokesh
+Pramod
+Institution
+Vignan Institute of Technology & Science
+Department of Computer Science & Engineering
+2nd Year  ·  B.Tech CSE
+🔴  MANDATORY CONSTRAINTS FOR AI AGENTS
+1. NEVER invent file paths, function names, package versions, or API endpoints. Use only what is documented here.
+2. If a file path is ambiguous, STOP and ask the user to clarify before generating code.
+3. All code output must be syntactically valid. Run a mental lint pass before returning code.
+4. When referencing algorithms (Winnowing, Structural, Semantic), use the exact variable names from schemas.py.
+5. NEVER modify backend/algorithms/*.py logic without explicitly being told to. Only add, never silently rewrite.
+6. Firebase / Supabase / other backend integrations MUST be feature-flagged so the existing FastAPI backend still runs.
+7. When adding packages, always pin versions (e.g. sentence-transformers==2.7.0). Never add 'latest'.
+8. The multi-file comparison feature (§5) is a NEW module. Do NOT alter existing two-file compare logic.
+9. SEO metadata must be verified against Next.js 14 Metadata API. Never use deprecated <Head> tags.
+10. All scroll animations use Framer Motion. Never introduce GSAP, AOS, or other animation libraries.
+SKILL TAG
+DEFINITION & CONSTRAINT
+[SKILL:CODE-GEN]
+Generate only syntactically correct TypeScript/Python. Verify imports exist in package.json / requirements.txt before using them.
+[SKILL:UI-BRAND]
+All UI must use the AuraDiff palette: Indigo-600 brand, Cyan-500 accent, Slate-800 text. Font: Inter (web), Arial (fallback). Never use raw hex codes not in the design token file.
+[SKILL:SEO]
+Apply Next.js 14 Metadata API only. Title ≤ 60 chars, description ≤ 160 chars. Include OG tags, canonical URL, JSON-LD schema. Never use <Head> from next/head.
+[SKILL:ANIMATION]
+Use Framer Motion variants only. Apply whileInView with viewport={{ once: true }}. Every section must have initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }}.
+[SKILL:FIREBASE]
+Firebase integration is ADDITIVE. Always wrap in environment-variable guard: if (process.env.NEXT_PUBLIC_BACKEND === 'firebase'). Never remove FastAPI fallback.
+[SKILL:ALGO-DOC]
+When documenting algorithms, use the exact field names from ComparisonResponse schema. Never paraphrase field names.
+[SKILL:MULTI-COMP]
+Multi-file comparison is a new route /compare-batch. It MUST NOT call the existing /compare endpoint in a loop; it requires its own batch endpoint in main.py.
+Token
+Value
+Usage
+--color-brand
+#4F46E5 (Indigo-600)
+Primary CTAs, headings, nav
+--color-brand-dk
+#3730A3 (Indigo-800)
+Hover states, footer
+--color-accent
+#06B6D4 (Cyan-500)
+Highlights, badges, charts
+--color-success
+#10B981 (Emerald-500)
+Exact match highlights
+--color-warn
+#F59E0B (Amber-500)
+Structural match highlights
+--color-semantic
+#7C3AED (Violet-600)
+Semantic match highlights
+--font-sans
+Inter, Arial, sans
+All body text
+--font-mono
+JetBrains Mono, Mono
+Code snippets only
+Route
+Component / Page
+Section Role
+/
+app/page.tsx (Landing)
+Hero + algo showcase + team + upload CTA
+/compare
+app/compare/page.tsx
+Two-file split-view comparison
+/batch
+app/batch/page.tsx
+Multi-student batch compare (NEW §5)
+/about
+app/about/page.tsx
+Algorithm deep-dive + creator section
+/api/compare
+app/api/compare/route.ts
+Proxy to FastAPI /compare
+/api/compare-batch
+app/api/compare-batch/route.ts
+Proxy to FastAPI /compare-batch (NEW)
+Algorithm Showcase — Live Demo Requirements
+Display: Three horizontally scrollable cards on desktop (stacked on mobile).
+Card 1 — Winnowing (Exact): Blue Indigo accent. Show k-gram hashing animation (CSS keyframes). Display a Jaccard score counter that counts up on scroll-enter.
+Card 2 — Structural AST: Emerald accent. Show a tree-node diagram built with SVG (no external lib). Animate node connections drawing in on scroll.
+Card 3 — Semantic: Violet accent. Show a cosine similarity heatmap (5x5 grid, Tailwind coloured cells). Animate cell fills on scroll.
+Below cards: a live text comparison micro-widget. Two 200-char text boxes, hardcoded sample, with highlighted matches colour-coded in real time.
+👤
+P. Sandeep
+CSE · 2nd Year
+Vignan ITS
+👤
+Mahathi
+CSE · 2nd Year
+Vignan ITS
+👤
+Lokesh
+CSE · 2nd Year
+Vignan ITS
+👤
+Pramod
+CSE · 2nd Year
+Vignan ITS
+Framer Motion Standard Variant (copy exactly)
+const sectionVariant = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } }
+};
+
+<motion.section variants={sectionVariant} initial='hidden' whileInView='visible'
+  viewport={{ once: true, margin: '-80px' }}>
+  {/* section content */}
+</motion.section>
+
+For stagger children: use staggerChildren: 0.1 in the parent transition.
+app/layout.tsx — Root Metadata (implement exactly)
+export const metadata: Metadata = {
+  title: { default: 'AuraDiff — Plagiarism & Code Similarity Detector', template: '%s | AuraDiff' },
+  description: 'Detect plagiarism and code similarity with 3 AI algorithms: Winnowing, AST Structural, and Semantic analysis. Free, fast, accurate.',
+  keywords: ['plagiarism detector', 'code similarity checker', 'academic integrity', 'Winnowing algorithm', 'semantic similarity', 'AST comparison'],
+  openGraph: { type: 'website', url: 'https://auradiff.app', siteName: 'AuraDiff',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'AuraDiff Dashboard' }] },
+  twitter: { card: 'summary_large_image', creator: '@auradiff' },
+  robots: { index: true, follow: true },
+  canonical: 'https://auradiff.app',
+};
+Backend Service Interface (lib/backend.ts) — AI must create this file
+export interface BackendService {
+  compare(fileA: File, fileB: File): Promise<ComparisonResponse>;
+  compareBatch(files: File[]): Promise<BatchComparisonResponse>;
+}
+
+// Concrete implementations:
+// lib/backends/fastapi.ts  — existing FastAPI (default)
+// lib/backends/firebase.ts — Firebase Cloud Functions (opt-in via env var)
+
+// Factory (lib/backend.ts):
+export const backend: BackendService =
+  process.env.NEXT_PUBLIC_BACKEND === 'firebase'
+  ? new FirebaseBackend()
+  : new FastAPIBackend();
+🔴  Critical Rules for AI Implementing §5
+1. The batch endpoint /compare-batch is a NEW FastAPI route in main.py. Do NOT loop /compare.
+2. The frontend /batch page is a NEW Next.js page. Do NOT modify app/compare/page.tsx.
+3. The student-level detail view reuses the existing Dashboard.tsx and SplitView.tsx components — never duplicate them.
+4. The pairwise matrix is O(n²/2) comparisons. For n>10, add a progress WebSocket stream.
+5. All student names come from the uploaded filename (e.g. 'student_sandeep.py' → 'Sandeep'). Never prompt for names separately.
+StudentMatrix Component Requirements
+Layout: CSS Grid, auto-sizing columns. Each cell = pairwise score between student[row] and student[col].
+Cell colour scale: Green (0–30%), Yellow (31–60%), Orange (61–79%), Red (80–100%) similarity.
+Diagonal cells: always '--' (self-comparison, skip).
+Hover: tooltip showing both student names + exact scores for all 3 algorithms.
+Click: opens StudentDetailPanel (see §5.3) for the clicked student.
+Sort: default by highest max-pairwise-score descending (most plagiaristic student first).
+Export: 'Download CSV' button exports the full pairwise matrix as CSV.
+FastAPI Batch Endpoint Specification (add to main.py)
+@app.post('/compare-batch', response_model=BatchComparisonResponse)
+async def compare_batch(files: List[UploadFile] = File(...)):
+    # 1. Parse all files (reuse existing parse_file() helper)
+    # 2. Generate all unique pairs: itertools.combinations(range(n), 2)
+    # 3. Run all three algorithms on each pair (parallelise with asyncio.gather)
+    # 4. Aggregate into BatchComparisonResponse
+    # 5. Return
+
+BatchComparisonResponse fields:
+  students: List[StudentMeta]  # { name, filename, file_index }
+  matrix: List[List[PairScore]]  # n×n, None on diagonal
+  summary: List[StudentSummary]  # sorted by max_score desc
+
+PairScore: { winnowing_score, jaccard_score, semantic_score, total_score, highlights }
+StudentSummary: { student_index, max_score, avg_score, risk_level }
+Field
+Type
+Description
+scores.winnowing_score
+float 0–1
+Jaccard of Winnowing fingerprints
+scores.jaccard_score
+float 0–1
+Structural / token Jaccard
+scores.semantic_score
+float 0–1
+Max-pooled cosine similarity
+scores.total_score
+float 0–1
+Weighted aggregate (code: 0.4/0.35/0.25)
+highlights
+List[HighlightInfo]
+Array of character-level match spans
+highlights[].source_index_start
+int
+Char offset in document A
+highlights[].source_index_end
+int
+Char offset end in document A
+highlights[].target_index_start
+int
+Char offset in document B
+highlights[].target_index_end
+int
+Char offset end in document B
+highlights[].match_type
+'exact'|'structural'|'semantic'
+Determines highlight colour
+☐
+Task
+Section
+☐
+AuraDiff SVG logo created in /public/logo.svg
+§1.2
+☐
+Design token file created at styles/tokens.css
+§1.1
+☐
+All 6 routes created in Next.js App Router
+§1.3
+☐
+Hero section with animated headline and particle background
+§2.1
+☐
+Algorithm showcase with live mini-demo (3 cards)
+§2.2
+☐
+Animated statistics counter bar
+§2.3
+☐
+Creator section with 4 team cards + stagger animation
+§2.4
+☐
+All sections wrapped in Framer Motion sectionVariant
+§2.5
+☐
+Root metadata in app/layout.tsx (Next.js Metadata API)
+§3.1
+☐
+JSON-LD structured data injected
+§3.2
+☐
+sitemap.ts and robots.ts implemented
+§3.3
+☐
+lib/backend.ts abstraction layer created
+§4.1
+☐
+FastAPIBackend and FirebaseBackend classes created
+§4.1
+☐
+NEXT_PUBLIC_BACKEND env guard implemented
+§4.1
+☐
+/compare-batch FastAPI endpoint added to main.py
+§5.4
+☐
+BatchComparisonResponse schema added to schemas.py
+§5.4
+☐
+StudentMatrix.tsx component created
+§5.2
+☐
+StudentDetailPanel.tsx (3-tab drawer) created
+§5.3
+☐
+WebSocket progress endpoint /ws/batch-progress added
+§5.5
+☐
+app/batch/page.tsx created with multi-file upload
+§5.1
+☐
+All existing schemas in schemas.py left unmodified
+§6.1
+☐
+Dockerfile added for FastAPI backend
+§7.1
+☐
+Bundle size verified < 150kB first load JS
+§7.2
+P. Sandeep
+CSE · 2nd Year
+Vignan ITS
+Mahathi
+CSE · 2nd Year
+Vignan ITS
+Lokesh
+CSE · 2nd Year
+Vignan ITS
+Pramod
+CSE · 2nd Year
+Vignan ITS

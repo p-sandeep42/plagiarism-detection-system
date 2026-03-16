@@ -1,0 +1,188 @@
+
+AURADIFF
+Revised Implementation Plan
+Batch-First Edition  ·  v2.1
+Incorporating all SOP v2.0 corrections, gap-fills, and priority sequencing
+Priority Order of Implementation
+
+
+
+§0  What Changed From the Original Plan
+This section documents every correction, addition, and structural change made relative to the original plan. Use it as a quick diff before briefing any AI agent.
+
+
+
+
+PHASE 1 — Batch Core Feature  [HIGHEST PRIORITY]
+All items in Phase 1 must be completed and verified before Phase 2 begins. These items are interdependent — back-end first, then API layer, then UI.
+
+
+
+P1-A  [MODIFY] backend/models/schemas.py
+Add the four new Pydantic models below. Place them AFTER the existing ComparisonResponse class. Do NOT modify any existing class.
+
+
+Risk level thresholds for StudentSummary (implement in a helper function, not inline):
+max_score < 0.30  →  'Low'  (green)
+max_score 0.30–0.60  →  'Medium'  (yellow)
+max_score 0.61–0.79  →  'High'  (orange)
+max_score >= 0.80  →  'Critical'  (red)
+
+
+P1-B  [MODIFY] backend/main.py
+Add three items to main.py: a startup model-load event, the /compare-batch POST endpoint, and the /ws/batch-progress WebSocket endpoint.
+
+
+
+
+Additional required additions to main.py:
+Import: import itertools, asyncio, os, concurrent.futures
+Startup event: load sentence-transformers model once into module-level variable MODEL
+Thread pool: pool = concurrent.futures.ThreadPoolExecutor(max_workers=4) at module level
+Helper _name_from_filename(filename): strip extension, replace underscores/hyphens with spaces, title-case
+Helper _validate_session_token(token): check against a simple env-var secret for now (BATCH_WS_SECRET)
+Helper _build_summary(i, matrix, n): compute max_score, avg_score, risk_level for student i
+
+
+P1-C  [NEW] frontend/next.config.ts  ← was missing from original plan
+This file is required for environment variable exposure, the FastAPI proxy (prevents CORS in production), and the image domain allowlist.
+
+
+
+P1-D  API Routes & Abstraction Layer
+[NEW] frontend/src/app/api/compare-batch/route.ts
+Acts as a secure server-side proxy. The client never calls FastAPI directly, so the FastAPI URL is never exposed to the browser.
+
+
+[NEW] frontend/src/lib/backend.ts  +  backends/fastapi.ts  +  backends/firebase.ts
+
+
+
+
+P1-E  [NEW] Batch UI Components
+[NEW] components/batch/BatchUploadZone.tsx  ← extracted from page (was missing)
+Separating the upload zone into its own component keeps batch/page.tsx readable and makes the zone independently testable.
+
+Props: onFilesAccepted(files: File[]): void, maxFiles: number
+Features: drag-and-drop via HTML5 API, click-to-browse fallback, file type guard (.py .js .txt .pdf .docx), file count badge, remove-individual-file button
+Show a filename chip for each accepted file. Derive student name from filename (strip extension, split on _ or -)
+Framer Motion: each chip animates in with layout animation (AnimatePresence + motion.div)
+If files.length > maxFiles: show inline error badge, disable submit CTA
+Do NOT put axios/fetch calls in this component. It is display-only.
+
+[NEW] components/batch/BatchErrorBoundary.tsx  ← was missing from original plan
+Wraps StudentMatrix so a single-file parse failure cannot crash the entire /batch page.
+
+
+[NEW] components/batch/StudentMatrix.tsx
+Renders the N×N pairwise heatmap grid. Full specification from SOP §5.2, with corrected prop interface:
+
+Props: data: BatchComparisonResponse, onStudentClick(studentIndex: number): void
+Grid: CSS Grid with auto columns. Column/row headers = student names.
+Cell colour: score < 0.30 → bg-green-100, 0.30–0.60 → bg-yellow-100, 0.61–0.79 → bg-orange-100, >= 0.80 → bg-red-200
+Diagonal: render '--' in slate-300, no click handler
+Hover tooltip (Tailwind group-hover): shows winnowing / structural / semantic breakdown
+Click: calls onStudentClick(row_index) — the panel shows the clicked student's data
+Sort toggle: button to sort student rows by max_score desc / alphabetical
+Export: 'Download CSV' button — generates pairwise matrix as CSV client-side (no API call)
+
+[NEW] components/batch/StudentDetailPanel.tsx
+Side-drawer with 3 tabs. Critical correction: Tab 2 must explicitly map PairScore fields to SplitView props — the original plan omitted this mapping.
+
+
+Remaining StudentDetailPanel specifications:
+Props: studentIndex: number, data: BatchComparisonResponse, parsedTexts: string[], onClose(): void
+Tab 1 — Score Overview: renders <Dashboard> with worst-case PairScore injected as scores prop
+Tab 2 — Side-by-Side: renders <SplitView> using mapping above
+Tab 3 — All Comparisons: table of all peers sorted by pairwise score desc + mini progress-bar per row
+Animation: Framer Motion — initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+Backdrop: semi-transparent slate-900/60 overlay behind the panel, click-away closes
+Header: student name, filename chip, risk-level badge (colour matches matrix cell colour)
+
+
+P1-F  [NEW] frontend/src/app/batch/page.tsx
+The batch route page wires everything together. Keep this file thin — all complexity lives in the sub-components.
+
+Imports: BatchUploadZone, BatchErrorBoundary, StudentMatrix, StudentDetailPanel
+State: files[], batchResult: BatchComparisonResponse|null, selectedStudent: number|null, isLoading: boolean, progress: {completed,total}
+On mount: open WebSocket to /ws/batch-progress?token=SESSION_TOKEN; update progress state on each message
+On submit: call getBackend().compareBatch(files), set batchResult
+Render sequence: (1) BatchUploadZone, (2) progress bar (visible only when isLoading), (3) BatchErrorBoundary > StudentMatrix, (4) StudentDetailPanel (conditional)
+SEO: export const metadata = { title: 'Batch Compare | AuraDiff', description: '...' }
+
+
+
+PHASE 2 — Frontend, SEO & Branding
+Begin Phase 2 only after Phase 1 is verified. Items in Phase 2 that depend on Phase 1 are marked with a dependency flag.
+
+P2-A  Configuration
+[NEW] frontend/src/styles/tokens.css — CSS variables per SOP §1.1 design token table
+[MODIFY] frontend/src/app/layout.tsx — Next.js Metadata API (see SOP §3.1), import tokens.css globally
+[NEW] frontend/public/logo.svg — SVG wordmark (AURA in Indigo-600, DIFF in Cyan-500)
+[NEW] frontend/src/app/sitemap.ts — dynamic sitemap including /, /compare, /batch, /about
+[NEW] frontend/src/app/robots.ts — allow all, disallow /api/*
+
+P2-B  Landing Page Overhaul  (frontend/src/app/page.tsx)
+Hero section — Framer Motion stagger headline, particle background, spring-physics dashboard preview
+Algorithm Showcase — 3 live-demo cards (Winnowing / Structural / Semantic per SOP §2.2)
+Statistics bar — CountUp hook, animated on scroll-enter
+Creator section — 4 team cards with stagger delay (Sandeep 0s, Mahathi 0.1s, Lokesh 0.2s, Pramod 0.3s)
+All sections: Framer Motion sectionVariant (initial opacity:0 y:32 → visible opacity:1 y:0)
+Dependency flag: batch CTA button links to /batch — requires Phase 1 complete
+
+P2-C  SEO
+JSON-LD: SoftwareApplication schema on layout, FAQPage on /about, BreadcrumbList on /compare and /batch
+next/font: load Inter with display:swap, pass to --font-sans token
+All Next.js <Image> components: add priority prop to above-fold images
+Core Web Vitals: set explicit min-height on all animated section containers to prevent CLS
+
+
+
+PHASE 3 — Infrastructure & Scaling
+P3-A  [NEW] backend/Dockerfile
+
+P3-B  [MODIFY] backend/requirements.txt  ← was missing from original plan
+Add and pin: websockets==12.0
+Add and pin: python-jose==3.3.0
+Add and pin: httpx==0.27.0  (used for any outbound requests)
+Verify existing: sentence-transformers==2.7.0, fastapi, uvicorn, gunicorn — pin all
+
+P3-C  Monitoring
+Add Sentry SDK to both Next.js (sentry.client.config.ts) and FastAPI (main.py)
+Add Vercel Analytics: import { Analytics } from '@vercel/analytics/react' in layout.tsx
+
+
+
+Verification Plan  (Revised)
+Run verifications in order. Do not advance to the next phase until all checks in the current phase pass.
+
+Phase 1 Verifications
+Run tests/test_weight_sum.py — assert winnowing + structural + semantic weights sum to 1.0  ← NEW, was missing
+Start FastAPI: uvicorn main:app --reload. Send 3 files to POST /compare-batch. Assert response shape matches BatchComparisonResponse schema.
+Run python tests/test_batch_ws.py — connects WebSocket, sends session_id, asserts progress messages arrive as { completed, total, current_pair }.
+Assert /compare (existing) still returns ComparisonResponse unchanged — regression check.
+Run next build — assert no TypeScript errors in batch/ or lib/backends/
+
+Phase 2 Verifications
+Open /batch in browser. Upload 3 dummy files (e.g. hello.py, world.py, sample.txt). Confirm matrix renders with correct colour cells.
+Click a student name. Confirm StudentDetailPanel slides in from the right. Confirm all 3 tabs render without errors.
+Verify Tab 2 (SplitView) shows highlights coloured correctly (Blue=Exact, Emerald=Structural, Purple=Semantic).
+Scroll the landing page. Confirm each section fades-in from y:32 on scroll-enter (not on page load).
+Run Lighthouse on /. Target: Performance >= 85, SEO >= 95.
+
+Phase 3 Verifications
+docker build -t auradiff-backend . — assert build completes, model downloads at build time.
+docker run -p 8000:8000 auradiff-backend — assert /compare-batch accessible.
+npx @next/bundle-analyzer — assert first-load JS < 150kB.
+
+
+
+Master Implementation Checklist
+Every checkbox below must be ticked before the project is considered complete. Items in red were absent from the original plan.
+
+
+
+
+
+
+AuraDiff Revised Implementation Plan v2.1 — Batch-First Edition. Vignan Institute of Technology and Science, CSE Department. P. Sandeep · Mahathi · Lokesh · Pramod.

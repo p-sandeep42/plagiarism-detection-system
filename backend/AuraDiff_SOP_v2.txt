@@ -1,0 +1,194 @@
+
+AURADIFF
+Multi-Algorithmic Plagiarism & Code-Similarity Detection
+Standard Operating Procedure  ·  Version 2.0  ·  AI-Optimised Edition
+This SOP is purpose-built to instruct AI agents (Claude, Gemini, GPT, Firebase Genkit, etc.) on how to optimise, extend, and deploy AuraDiff without hallucination.
+
+§0  AI Instruction Manifesto & Anti-Hallucination Rules
+This section MUST be read first by any AI agent before acting on instructions in this SOP. All tasks derived from this document are subject to the following constraints.
+
+
+0.1  Skill Definitions (Anti-Hallucination Guards)
+The following named skills are referenced throughout this SOP. AI agents must apply the exact skill protocol when the skill tag appears.
+
+
+
+
+§1  Branding, Visual Identity & Website Architecture
+1.1  Brand Identity [SKILL:UI-BRAND]
+Every AI-generated UI component, email template, and documentation page must strictly adhere to the following identity system.
+
+
+1.2  Logo Construction Instructions
+The AuraDiff logo is constructed in SVG/JSX (no external image files for the wordmark). AI must generate it programmatically as follows:
+Wordmark: "AURA" in Indigo-600, bold, tracking-tight + "Diff" in Cyan-500, bold
+Icon mark: Two overlapping document silhouettes with a small diff-indicator symbol (≠) in the centre, coloured Indigo-600/Cyan-500 split
+Minimum size: 32px height for navbar, 64px for hero, 24px for favicon
+File output: /public/logo.svg (scalable), /public/favicon.ico (converted from SVG)
+Never use rasterised PNG logos — must remain vector
+
+1.3  Page Architecture & Route Map
+The Next.js 14 App Router structure must match the following. AI agents must not create additional top-level routes without approval.
+
+
+
+
+§2  Dynamic Landing Page — Component Specifications
+The landing page must be a world-class marketing page that demonstrates AuraDiff's capabilities live, ranks well on Google, and converts visitors to users. All sections scroll-animate using Framer Motion [SKILL:ANIMATION].
+
+2.1  Hero Section
+The hero must be the most visually impactful element of the site. AI must implement the following exactly:
+Full-viewport height (min-h-screen) with a dark gradient background: from-slate-950 via-indigo-950 to-slate-900
+Animated headline using Framer Motion staggered character animation: 'Detect Plagiarism. Instantly.' — 'Detect' in white, 'Plagiarism.' in Indigo-400, 'Instantly.' typed-effect in Cyan-400
+Sub-headline: 'Three AI algorithms. One truth.' — fade-in after headline with 0.6s delay
+Two CTAs: Primary 'Analyse Now' (Indigo-600 filled, shadow-lg) and Secondary 'See It Live' (ghost border-indigo-400) — both link to /compare
+Background: floating animated particles (React-TSParticles or CSS keyframe dots), very subtle, opacity 0.15
+Hero includes a floating mini-preview of the split-view dashboard that animates in from the right with spring physics
+
+2.2  Algorithm Showcase Section [SKILL:ALGO-DOC]
+This is the centrepiece educational section. It must show all three algorithms operating on a live, embedded micro-demo using hardcoded sample texts.
+
+
+2.3  Statistics / Trust Bar
+Animated counters on scroll-enter: '3 Algorithms', '99.2% Accuracy', '<2s Response', 'Unlimited Files'
+Use CountUp.js (or a custom React hook) — never hardcode static numbers
+Dark background (slate-900), border-top/bottom in Indigo-800
+
+2.4  Creator / Team Section
+The creator section showcases the four developers from Vignan Institute of Technology and Science. This section must appear on both the landing page and the /about route. [SKILL:UI-BRAND]
+
+
+Each creator card must: (1) have a hover scale animation (scale-105), (2) show a GitHub/LinkedIn icon row, (3) pop in with staggered delay (0s, 0.1s, 0.2s, 0.3s) using Framer Motion. Avatar placeholder is a gradient circle with initials.
+
+2.5  Scroll Animation Specification [SKILL:ANIMATION]
+Every section block on the landing page must apply the following Framer Motion pattern. AI must NOT use CSS @keyframes as the primary animation mechanism.
+
+
+
+
+§3  Search Engine Optimisation [SKILL:SEO]
+AuraDiff must rank for plagiarism detection, code similarity checker, and academic integrity tool queries. All SEO is implemented via the Next.js 14 Metadata API — never via react-helmet or <Head>.
+
+3.1  Metadata Configuration
+
+3.2  JSON-LD Structured Data
+Add SoftwareApplication schema on the root layout
+Add FAQPage schema on /about with algorithm FAQs
+Add BreadcrumbList on /compare and /batch
+Use next/script with strategy='afterInteractive' for JSON-LD injection
+
+3.3  Performance (Core Web Vitals)
+LCP target: < 2.5s — Hero image must use Next.js <Image> with priority prop
+CLS: 0 — all animation containers must have explicit height/min-height set
+FID/INP: Defer all non-critical JS (algorithm demo scripts load on scroll)
+Use next/font for Inter to eliminate layout shift from font loading
+sitemap.xml and robots.txt must be generated via app/sitemap.ts and app/robots.ts
+
+
+
+§4  Firebase-Ready Backend Architecture [SKILL:FIREBASE]
+The project must be architected so that Firebase (Firestore, Cloud Functions, Firebase Storage) or any other BaaS can replace or supplement the FastAPI backend with zero changes to the frontend component tree.
+
+4.1  Abstraction Layer
+
+4.2  Firebase Cloud Function Specification
+If Firebase is chosen, the Cloud Function must mirror the FastAPI endpoint contract exactly. AI must implement the following function signature:
+Function name: compareDocuments (callable)
+Input: { fileA: base64string, fileB: base64string, fileTypeA: string, fileTypeB: string }
+Output: ComparisonResponse (identical schema to FastAPI — see §6.1)
+Timeout: 540 seconds (max) — semantic model loading requires extra time
+Memory: 2GiB — required for sentence-transformers inference
+Runtime: Python 3.11 — use functions-framework
+
+4.3  Firestore Schema (Optional Caching)
+To avoid re-running expensive semantic comparisons, results can be cached in Firestore using a content-hash key:
+Collection: comparison_cache
+Document ID: SHA-256(fileA_content + fileB_content) — computed server-side
+Fields: scores (map), highlights (array), created_at (timestamp), ttl (7 days)
+AI must add cache-check logic to the Cloud Function BEFORE running algorithms
+
+
+
+§5  Multi-Student Batch Comparison Feature [SKILL:MULTI-COMP]
+This is the most important new feature in this SOP. It transforms AuraDiff from a pairwise tool into a classroom-scale plagiarism detection system. AI must follow every specification exactly.
+
+
+5.1  User Experience Flow
+User navigates to /batch
+Multi-file drop zone accepts N files (PDF, DOCX, .py, .js, .txt). Maximum 30 files per batch.
+User clicks 'Run Batch Analysis'. Progress bar appears with live percentage.
+Result: a Student Matrix Grid — N×N grid of pairwise similarity scores.
+User clicks any student's name/card to expand their individual detail panel.
+Detail panel shows: the student's highest-plagiarism match, full Dashboard.tsx score breakdown, and SplitView.tsx comparison against the most-similar peer.
+
+5.2  Student Matrix Grid — Component Specification
+The StudentMatrix component (components/batch/StudentMatrix.tsx) is the primary UI for the batch feature.
+
+
+5.3  StudentDetailPanel — Component Specification
+When a user clicks a student name in the matrix, StudentDetailPanel (components/batch/StudentDetailPanel.tsx) slides in from the right as a side-drawer.
+Header: student name, file name, overall risk level badge (Low/Medium/High/Critical)
+Tab 1 — 'Score Overview': renders existing Dashboard.tsx with the student's worst-case pairwise scores injected as props
+Tab 2 — 'Side-by-Side': renders existing SplitView.tsx comparing the student's file against their highest-matching peer
+Tab 3 — 'All Comparisons': table listing every peer, their pairwise total_score, and a mini bar chart
+Animation: Framer Motion slide-in from right (x: '100%' → x: 0) with backdrop blur overlay
+
+5.4  Backend: /compare-batch Endpoint
+
+5.5  Performance Strategy for Batch
+Parallelise algorithm runs: use Python asyncio + concurrent.futures.ThreadPoolExecutor
+Cache parsed file content in memory per request to avoid re-parsing
+Semantic model loaded once at startup (app startup event), not per-request
+WebSocket endpoint /ws/batch-progress streams { completed, total, current_pair } JSON messages
+Frontend uses native WebSocket API (not socket.io) to display live progress
+
+
+
+§6  Data Schemas & API Contracts [SKILL:ALGO-DOC]
+6.1  Existing ComparisonResponse (Do NOT modify)
+
+
+
+§7  Project Scaling & Production-Readiness
+7.1  Backend Scaling
+Containerise FastAPI with Docker — provide Dockerfile in repo root
+Use Gunicorn + Uvicorn workers: gunicorn -k uvicorn.workers.UvicornWorker -w 4
+Load the sentence-transformers model once at startup; use model pool if multi-worker
+Add Redis caching layer for repeat comparisons (key = hash of both file contents)
+Deploy on Cloud Run (GCP) or Railway.app for automatic horizontal scaling
+
+7.2  Frontend Scaling
+Enable Next.js ISR (Incremental Static Regeneration) for the /about page
+Use Next.js Image Optimisation for all team photos and OG images
+Bundle analysis: run next build && npx @next/bundle-analyzer — target < 150kB first load JS
+CDN: Deploy on Vercel; configure Cache-Control: s-maxage=3600 for static assets
+
+7.3  Monitoring & Observability
+Add Sentry for both Next.js (client+server) and FastAPI error tracking
+API latency tracking: log p50/p95/p99 for /compare and /compare-batch
+Vercel Analytics for Web Vitals (CWV) tracking in production
+
+7.4  Extensibility Checklist for New Algorithms
+When adding a 4th algorithm, AI must follow this exact checklist to prevent breaking existing functionality:
+Create backend/algorithms/new_algo.py with a function compare(text_a, text_b) -> float
+Add new_score field to ComparisonResponse in schemas.py
+Update main.py weight dict: ensure all weights still sum to 1.0
+Add new_score to Dashboard.tsx radar chart data array
+Add new highlight colour token to design tokens (§1.1)
+Update SplitView.tsx legend
+Add unit test in tests/test_new_algo.py
+
+
+
+§8  Master Implementation Checklist
+AI agents must tick every item below before declaring any task complete. Each item references the relevant SOP section.
+
+
+
+
+§9  Document Sign-Off
+This SOP is authored by the AuraDiff project team at Vignan Institute of Technology and Science. It is the authoritative reference for all AI-assisted development on this codebase.
+
+
+
+Document Version: 2.0  ·  AI-Optimised Edition  ·  AuraDiff © 2024–2025 Vignan Institute of Technology and Science, CSE Department.

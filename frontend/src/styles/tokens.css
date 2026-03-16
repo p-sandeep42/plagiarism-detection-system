@@ -1,0 +1,17 @@
+:root {
+  /* AuraDiff SOP v2.1 Design Tokens */
+  --color-brand: #4F46E5;        /* Indigo-600 */
+  --color-brand-dk: #3730A3;     /* Indigo-800 */
+  --color-accent: #06B6D4;       /* Cyan-500 */
+  
+  --color-success: #10B981;      /* Emerald-500 */
+  --color-warn: #F59E0B;         /* Amber-500 */
+  --color-danger: #EF4444;       /* Red-500 */
+  --color-semantic: #7C3AED;     /* Violet-600 */
+
+  --font-sans: 'Inter', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
