@@ -1,5 +1,5 @@
-$backend = Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command cd backend; .\venv\Scripts\activate; uvicorn main:app --reload --port 8000" -PassThru
-$frontend = Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command cd frontend; npm run dev" -PassThru
+$backend = Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command cd api; .\venv\Scripts\activate; uvicorn main:app --reload --port 8000" -PassThru
+$frontend = Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command npm run dev" -PassThru
 
 Write-Host "AuraDiff is running!"
 Write-Host "Backend API: http://localhost:8000"

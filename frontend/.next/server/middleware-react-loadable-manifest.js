@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"lib\\\\backend.ts -> ./backends/fastapi\":{\"id\":\"lib\\\\backend.ts -> ./backends/fastapi\",\"files\":[\"static/chunks/_app-pages-browser_src_lib_backends_fastapi_ts.js\"]}}"

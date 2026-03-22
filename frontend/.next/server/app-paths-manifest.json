@@ -1,6 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/compare/page": "app/compare/page.js",
-  "/batch/page": "app/batch/page.js",
-  "/api/compare-batch/route": "app/api/compare-batch/route.js"
-}

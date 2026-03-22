@@ -13,8 +13,8 @@ dist/
 build/
 
 # Next.js
-frontend/.next/
-frontend/out/
+.next/
+out/
 
 # Environment variables
 .env
