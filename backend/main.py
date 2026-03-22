@@ -4,9 +4,13 @@ from typing import List, Dict, Optional
 import itertools
 import asyncio
 import os
+import sys
 import concurrent.futures
 import difflib
 import re
+
+# Ensure backend directory is in the import path for Vercel serverless functions
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from models.schemas import ComparisonResponse, ComparisonScore, HighlightInfo, BatchComparisonResponse, StudentMeta, PairScore, StudentSummary
 from services.parser import parse_file
