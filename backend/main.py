@@ -14,7 +14,7 @@ from services.parser import parse_file
 # Import algorithms
 from algorithms.winnowing import winnowing_similarity
 from algorithms.structural import structural_similarity
-from algorithms.semantic import semantic_similarity
+from algorithms.semantic import semantic_similarity, encode_sentences, cosine_similarity_matrix
 
 app = FastAPI(title="AuraDiff API")
 
@@ -27,21 +27,8 @@ app.add_middleware(
 )
 
 # Global variables
-MODEL = None
 pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 session_queues = {}
-
-@app.on_event("startup")
-async def startup_event():
-    global MODEL
-    try:
-        from sentence_transformers import SentenceTransformer
-        MODEL = SentenceTransformer('all-MiniLM-L6-v2')
-        print("SentenceTransformer loaded successfully.")
-    except ImportError:
-        print("sentence_transformers not installed.")
-    except Exception as e:
-        print(f"Failed to load sentence-transformers on startup: {e}")
 
 @app.get("/")
 def health_check():
@@ -68,20 +55,19 @@ def _get_highlights(text1: str, text2: str) -> List[HighlightInfo]:
             )
             
     # 2. Semantic Matches (Sentence Level)
-    global MODEL
     try:
-        from sklearn.metrics.pairwise import cosine_similarity
-        
         sentences1 = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text1) if len(s.strip()) > 10]
         sentences2 = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text2) if len(s.strip()) > 10]
         
-        if sentences1 and sentences2 and MODEL:
-            emb1 = MODEL.encode(sentences1)
-            emb2 = MODEL.encode(sentences2)
-            sim_matrix = cosine_similarity(emb1, emb2)
+        if sentences1 and sentences2:
+            all_sentences = sentences1 + sentences2
+            all_vecs = encode_sentences(all_sentences)
+            emb1 = all_vecs[:len(sentences1)]
+            emb2 = all_vecs[len(sentences1):]
+            sim_matrix = cosine_similarity_matrix(emb1, emb2)
             
             for i, s1 in enumerate(sentences1):
-                best_j = sim_matrix[i].argmax()
+                best_j = max(range(len(sim_matrix[i])), key=lambda j: sim_matrix[i][j])
                 best_sim = sim_matrix[i][best_j]
                 
                 if best_sim > 0.50: # High semantic similarity threshold

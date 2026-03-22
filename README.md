@@ -65,8 +65,8 @@ Converts text into a set of k-gram hashes and selects minimum hashes within a sl
 ### 2. 🌲 Structural Similarity (AST Comparison)
 For **Python** files, the code is parsed into an Abstract Syntax Tree (AST) and the sequence of AST node types is compared. For **JavaScript** files, `esprima` is used. For prose documents, Jaccard similarity over token sets is used instead. This approach catches structural plagiarism even when variable names or formatting have been changed.
 
-### 3. 🧬 Semantic Similarity (Embedding Comparison)
-Uses the `all-MiniLM-L6-v2` sentence-transformer model to generate dense vector embeddings for text chunks. Cosine similarity between embeddings is computed and max-pooled to produce an overall semantic score. This catches paraphrased content that evades keyword-level detection.
+### 3. 🧬 Semantic Similarity (TF-IDF + Cosine Similarity)
+Uses a custom **TF-IDF mapping system** paired with cosine similarity to analyze document semantics. This lightweight, pure-Python implementation analyzes word frequencies and similarities to detect paraphrased content without the need for heavy machine learning models, ensuring the backend stays well under Vercel's 250MB serverless limit.
 
 ### 4. ⚖️ Weighted Aggregate Score
 The three scores are combined with **file-type-aware weights**:
@@ -169,9 +169,8 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 |------------|---------|
 | **FastAPI** | REST API framework |
 | **Uvicorn** | ASGI server |
-| **sentence-transformers** (`all-MiniLM-L6-v2`) | Semantic embeddings |
-| **PyTorch** | Tensor operations for embedding similarity |
-| **scikit-learn** | Cosine similarity matrix computation |
+| **TF-IDF Engine** | Custom pure-Python semantic comparison |
+| **NumPy** | High-performance matrix computations |
 | **PyMuPDF** (`fitz`) | PDF text extraction |
 | **python-docx** | DOCX text extraction |
 | **esprima** | JavaScript AST parsing |
@@ -203,7 +202,7 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔒 Privacy
 
-All file processing happens **locally** on your machine. No documents are stored or transmitted to any external service. The semantic model (`all-MiniLM-L6-v2`) runs entirely offline after the initial one-time download from Hugging Face.
+All file processing happens **locally** on your machine (or securely on your Vercel deployment). No documents are stored in databases or transmitted to any third-party AI service. 
 
 ---
 
