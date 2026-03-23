@@ -1,0 +1,10 @@
+api/
+venv/
+env/
+.env
+__pycache__/
+*.tar
+AuraDiff_ImplPlan_v2.1_unzipped/
+*.zip
+*.pt
+*.pth
