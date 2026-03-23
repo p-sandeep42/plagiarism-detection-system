@@ -31,7 +31,7 @@ from models.schemas import (
 from services.parser import parse_file
 from algorithms.winnowing import winnowing_similarity
 from algorithms.structural import structural_similarity
-from algorithms.semantic import semantic_similarity, encode_sentences, cosine_similarity_matrix
+# Semantic removed
 # Auth and History imports removed
 
 # ---------------------------------------------------------------------------
