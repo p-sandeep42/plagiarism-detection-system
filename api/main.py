@@ -161,55 +161,16 @@ def _get_highlights(text1: str, text2: str) -> List[HighlightInfo]:
                 )
             )
 
-    # 2. Semantic Matches
-    try:
-        sentences1 = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text1) if len(s.strip()) > 10]
-        sentences2 = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text2) if len(s.strip()) > 10]
-
-        if sentences1 and sentences2:
-            all_sentences = sentences1 + sentences2
-            all_vecs = encode_sentences(all_sentences)
-            emb1 = all_vecs[: len(sentences1)]
-            emb2 = all_vecs[len(sentences1) :]
-            sim_matrix = cosine_similarity_matrix(emb1, emb2)
-
-            for i, s1 in enumerate(sentences1):
-                best_j = max(range(len(sim_matrix[i])), key=lambda j: sim_matrix[i][j])
-                best_sim = sim_matrix[i][best_j]
-
-                if best_sim > 0.50:
-                    s2 = sentences2[best_j]
-                    start1 = text1.find(s1)
-                    start2 = text2.find(s2)
-
-                    if start1 != -1 and start2 != -1:
-                        is_covered = any(
-                            (h.source_index_start <= start1 and h.source_index_end >= start1 + len(s1))
-                            for h in highlights
-                        )
-                        if not is_covered:
-                            highlights.append(
-                                HighlightInfo(
-                                    source_index_start=start1,
-                                    source_index_end=start1 + len(s1),
-                                    target_index_start=start2,
-                                    target_index_end=start2 + len(s2),
-                                    text=s1,
-                                    match_type="semantic",
-                                )
-                            )
-    except Exception as e:
-        print(f"Error in semantic highlighting: {e}")
-
     return highlights
 
 
 def _aggregate(w_score: float, s_score: float, e_score: float, ext1: str) -> float:
+    # Semantic score is ignored to save memory usage on Render Free Tier. Weighting redistributed.
     if ext1 in ["py", "js", "cpp", "java", "ts"]:
-        w_win, w_str, w_sem = 0.2, 0.6, 0.2
+        w_win, w_str = 0.3, 0.7
     else:
-        w_win, w_str, w_sem = 0.3, 0.2, 0.5
-    return (w_win * w_score) + (w_str * s_score) + (w_sem * e_score)
+        w_win, w_str = 0.6, 0.4
+    return (w_win * w_score) + (w_str * s_score)
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +196,7 @@ async def compare_files(
 
     winnowing_score = winnowing_similarity(text1, text2)
     struct_score = structural_similarity(text1, text2, ext1 if ext1 == ext2 else "txt")
-    sem_score = semantic_similarity(text1, text2)
+    sem_score = 0.0  # Semantic removed
 
     total_score = _aggregate(winnowing_score, struct_score, sem_score, ext1 if ext1 == ext2 else "txt")
     highlights = _get_highlights(text1, text2)
@@ -312,7 +273,7 @@ def _build_summary(student_index: int, matrix: List[List[Optional[PairScore]]], 
 def _run_pair_sync(text_a, text_b, type_a, type_b):
     w = winnowing_similarity(text_a, text_b)
     s = structural_similarity(text_a, text_b, type_a if type_a == type_b else "txt")
-    e = semantic_similarity(text_a, text_b)
+    e = 0.0  # Semantic removed
     total = _aggregate(w, s, e, type_a if type_a == type_b else "txt")
     highlights = _get_highlights(text_a, text_b)
 
