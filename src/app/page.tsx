@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { ArrowRight, Code, ShieldCheck, Zap, Github, Linkedin, Layers, Search, CheckCircle, LogIn, LogOut, Clock, User } from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
 
 // --- Framer Motion Standard Variants ---
 const sectionVariant = {
@@ -38,49 +37,25 @@ const itemVariant = {
 // --- Components ---
 
 function Nav() {
-  const { isAuthenticated, user, logout, isLoading } = useAuth();
-
   return (
     <nav className="fixed top-0 w-full z-50 px-6 py-4 flex justify-between items-center backdrop-blur-md border-b border-white/5 bg-slate-950/20">
       <div className="flex items-center gap-2">
-        <Image src="/logo.svg" alt="AuraDiff Logo" width={120} height={32} />
+        <Link href="/">
+          <Image src="/logo.svg" alt="AuraDiff Logo" width={120} height={32} />
+        </Link>
       </div>
       <div className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
         <Link href="/compare" className="hover:text-indigo-400 transition-colors">Pairwise</Link>
         <Link href="/batch" className="hover:text-indigo-400 transition-colors">Batch Mode</Link>
-        {isAuthenticated && (
-          <Link href="/history" className="hover:text-indigo-400 transition-colors flex items-center gap-1">
-            <Clock size={14} /> History
-          </Link>
-        )}
         <a href="#algorithms" className="hover:text-indigo-400 transition-colors">Algorithms</a>
       </div>
       <div className="flex items-center gap-3">
-        {isLoading ? (
-          <div className="w-20 h-8 bg-slate-800 animate-pulse rounded-full" />
-        ) : isAuthenticated ? (
-          <>
-            <span className="hidden md:flex items-center gap-2 text-sm text-gray-400">
-              <div className="w-7 h-7 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center">
-                <User size={14} className="text-indigo-400" />
-              </div>
-              {user?.email}
-            </span>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white border border-white/10 rounded-full transition-all hover:bg-white/5"
-            >
-              <LogOut size={14} /> Logout
-            </button>
-          </>
-        ) : (
-          <Link 
-            href="/login" 
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-full transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
-          >
-            <LogIn size={14} /> Login
-          </Link>
-        )}
+        <Link 
+          href="/compare" 
+          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-full transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+        >
+          Get Started
+        </Link>
       </div>
     </nav>
   );

@@ -32,8 +32,7 @@ from services.parser import parse_file
 from algorithms.winnowing import winnowing_similarity
 from algorithms.structural import structural_similarity
 from algorithms.semantic import semantic_similarity, encode_sentences, cosine_similarity_matrix
-from database import init_db, get_db, ComparisonHistory
-from auth import router as auth_router, get_current_user, User as AuthUser
+# Auth and History imports removed
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -55,13 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount auth router
-app.include_router(auth_router)
-
-# Initialize DB on startup
-@app.on_event("startup")
-def on_startup():
-    init_db()
+# Auth and Database initialization removed
 
 # Global variables
 pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -182,8 +175,6 @@ async def compare_files(
     request: Request,
     file1: UploadFile = File(...),
     file2: UploadFile = File(...),
-    current_user: AuthUser = Depends(get_current_user),
-    db=Depends(get_db),
 ):
     ext1 = _validate_file(file1)
     ext2 = _validate_file(file2)
@@ -215,23 +206,6 @@ async def compare_files(
         source_text=text1,
         target_text=text2,
     )
-
-    # Save to history
-    try:
-        safe_fn1 = _sanitize_filename(file1.filename)
-        safe_fn2 = _sanitize_filename(file2.filename)
-        history_entry = ComparisonHistory(
-            user_id=current_user.id,
-            comparison_type="pairwise",
-            filenames=json.dumps([safe_fn1, safe_fn2]),
-            total_score=round(total_score, 4),
-            risk_level="Low" if total_score < 0.3 else ("Medium" if total_score <= 0.6 else ("High" if total_score <= 0.79 else "Critical")),
-            result_json=result.model_dump_json(),
-        )
-        db.add(history_entry)
-        db.commit()
-    except Exception as e:
-        print(f"History save error: {e}")
 
     return result
 
@@ -295,8 +269,6 @@ async def compare_batch(
     request: Request,
     files: List[UploadFile] = File(...),
     session_id: Optional[str] = Form(None),
-    current_user: AuthUser = Depends(get_current_user),
-    db=Depends(get_db),
 ):
     n = len(files)
     if n < 2 or n > MAX_BATCH_FILES:
@@ -363,75 +335,10 @@ async def compare_batch(
 
     batch_result = BatchComparisonResponse(students=students, matrix=matrix, summary=summary, parsed_texts=texts)
 
-    # Save to history
-    try:
-        safe_filenames = [_sanitize_filename(f.filename) for f in files]
-        top_risk = summary[0].risk_level if summary else "Low"
-        top_score = summary[0].max_score if summary else 0.0
-        history_entry = ComparisonHistory(
-            user_id=current_user.id,
-            comparison_type="batch",
-            filenames=json.dumps(safe_filenames),
-            total_score=round(top_score, 4),
-            risk_level=top_risk,
-            result_json=batch_result.model_dump_json(),
-        )
-        db.add(history_entry)
-        db.commit()
-    except Exception as e:
-        print(f"History save error: {e}")
-
     return batch_result
 
 
-# ---------------------------------------------------------------------------
-# History endpoints (protected)
-# ---------------------------------------------------------------------------
-@app.get("/history")
-async def get_history(
-    current_user: AuthUser = Depends(get_current_user),
-    db=Depends(get_db),
-):
-    entries = (
-        db.query(ComparisonHistory)
-        .filter(ComparisonHistory.user_id == current_user.id)
-        .order_by(ComparisonHistory.created_at.desc())
-        .limit(50)
-        .all()
-    )
-    return [
-        {
-            "id": e.id,
-            "comparison_type": e.comparison_type,
-            "filenames": json.loads(e.filenames),
-            "total_score": e.total_score,
-            "risk_level": e.risk_level,
-            "created_at": e.created_at.isoformat() if e.created_at else None,
-        }
-        for e in entries
-    ]
-
-
-@app.get("/history/{entry_id}")
-async def get_history_detail(
-    entry_id: int,
-    current_user: AuthUser = Depends(get_current_user),
-    db=Depends(get_db),
-):
-    entry = db.query(ComparisonHistory).filter(ComparisonHistory.id == entry_id).first()
-    if not entry:
-        raise HTTPException(404, detail="History entry not found")
-    if entry.user_id != current_user.id:
-        raise HTTPException(403, detail="Access denied")
-    return {
-        "id": entry.id,
-        "comparison_type": entry.comparison_type,
-        "filenames": json.loads(entry.filenames),
-        "total_score": entry.total_score,
-        "risk_level": entry.risk_level,
-        "result": json.loads(entry.result_json),
-        "created_at": entry.created_at.isoformat() if entry.created_at else None,
-    }
+# History endpoints removed out of scope
 
 
 # ---------------------------------------------------------------------------
