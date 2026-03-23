@@ -1,6 +1,7 @@
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
+bcrypt==4.3.0
 certifi==2026.2.25
 click==8.3.1
 colorama==0.4.6
@@ -36,9 +37,12 @@ regex==2026.2.28
 rich==14.3.3
 rich-toolkit==0.19.7
 rignore==0.7.6
+sentence-transformers
 sentry-sdk==2.54.0
 setuptools==82.0.1
 shellingham==1.5.4
+slowapi==0.1.9
+sqlalchemy==2.0.36
 starlette==0.52.1
 tqdm==4.67.3
 typer==0.24.1
@@ -48,4 +52,5 @@ urllib3==2.6.3
 uvicorn==0.41.0
 watchfiles==1.1.1
 websockets==12.0
-python-jose==3.3.0
+python-jose[cryptography]==3.3.0
+gunicorn==23.0.0

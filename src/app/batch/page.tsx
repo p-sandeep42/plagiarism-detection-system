@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, Play, AlertCircle, CheckCircle2, Loader2, Info, ArrowLeft, Home } from 'lucide-react';
 import { getBackend } from '@/lib/backend';
@@ -11,6 +12,9 @@ import BatchUploadZone from '@/components/batch/BatchUploadZone';
 import BatchErrorBoundary from '@/components/batch/BatchErrorBoundary';
 import StudentMatrix from '@/components/batch/StudentMatrix';
 import StudentDetailPanel from '@/components/batch/StudentDetailPanel';
+import { useAuth } from '@/lib/AuthContext';
+import { useToast } from '@/components/Toast';
+import ErrorScreen from '@/components/ErrorScreen';
 
 export default function BatchPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -20,7 +24,16 @@ export default function BatchPage() {
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { addToast } = useToast();
+  const router = useRouter();
   const ws = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
     return () => {
@@ -40,7 +53,6 @@ export default function BatchPage() {
     const token = process.env.NEXT_PUBLIC_BATCH_WS_SECRET || 'replace_with_random_32_char_string';
 
     // Connect WebSocket for progress
-    // In a real app, this should handle reconnections and errors more robustly
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host.includes('localhost') ? 'localhost:8000' : window.location.host}/ws/batch-progress?token=${token}`;
     
@@ -53,21 +65,37 @@ export default function BatchPage() {
         const data = JSON.parse(event.data);
         setProgress({ completed: data.completed, total: data.total });
       };
+      ws.current.onerror = () => {
+        console.warn("WebSocket connection failed - progress updates unavailable");
+      };
     } catch (e) {
-      console.error("WS connection failed", e);
+      console.warn("WS connection failed", e);
     }
 
     try {
       const backend = await getBackend();
       const response = await backend.compareBatch(files, sessionId);
       setResult(response);
+      addToast("success", `Batch analysis complete! ${response.students.length} documents scanned.`);
     } catch (err: any) {
-      setError(err.message || "An error occurred during batch analysis.");
+      const msg = err.message || "An error occurred during batch analysis.";
+      setError(msg);
+      addToast("error", msg);
     } finally {
       setLoading(false);
       if (ws.current) ws.current.close();
     }
   };
+
+  if (authLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-400" size={32} />
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8 md:p-12 selection:bg-indigo-500/30">
@@ -193,10 +221,23 @@ export default function BatchPage() {
 
         {/* Error State */}
         {error && (
-          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-400">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-400"
+          >
             <AlertCircle />
-            <p className="font-medium">{error}</p>
-          </div>
+            <div>
+              <p className="font-bold">Analysis Failed</p>
+              <p className="text-sm opacity-80">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto text-sm underline underline-offset-4 hover:text-red-300"
+            >
+              Dismiss
+            </button>
+          </motion.div>
         )}
 
         {/* Info Footer */}

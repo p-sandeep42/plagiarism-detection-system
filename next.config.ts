@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/py/:path*',
-        destination: `${process.env.NEXT_PUBLIC_FASTAPI_URL}/:path*`
+        destination: `${process.env.NEXT_PUBLIC_FASTAPI_URL ?? 'http://localhost:8000'}/:path*`
       },
     ];
   },
