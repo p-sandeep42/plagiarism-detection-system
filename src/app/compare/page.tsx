@@ -9,29 +9,10 @@ import Dashboard from "@/components/Dashboard";
 import SplitView from "@/components/SplitView";
 import { motion } from "framer-motion";
 import { ArrowLeft, Layers, Loader2 } from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
 
 export default function ComparePage() {
   const [analysisData, setAnalysisData] = useState<any>(null);
-  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  if (isLoading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </main>
-    );
-  }
-
-  if (!isAuthenticated) return null;
-
   return (
     <main className="min-h-screen py-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col items-center">
       <div className="w-full flex justify-between items-center mb-12">

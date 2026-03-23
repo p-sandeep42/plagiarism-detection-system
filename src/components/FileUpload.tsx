@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UploadCloud, File, AlertCircle } from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
+
 import { useToast } from "@/components/Toast";
 
 const ALLOWED_EXTENSIONS = ["txt", "py", "js", "ts", "java", "cpp", "c", "h", "md", "csv", "json", "pdf", "docx"];
@@ -31,7 +31,7 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (da
   const [file2, setFile2] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
+
   const { addToast } = useToast();
 
   const handleFileSelect = (file: File, setter: (f: File) => void) => {
@@ -59,9 +59,6 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (da
       formData.append("file2", file2);
 
       const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       const response = await fetch("/api/py/compare", {
         method: "POST",
@@ -69,11 +66,6 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (da
         headers,
       });
 
-      if (response.status === 401) {
-        addToast("error", "Please log in to use this feature.");
-        window.location.href = "/login";
-        return;
-      }
 
       if (response.status === 429) {
         addToast("warning", "Rate limit exceeded. Please wait a moment.");
