@@ -12,7 +12,6 @@ import BatchUploadZone from '@/components/batch/BatchUploadZone';
 import BatchErrorBoundary from '@/components/batch/BatchErrorBoundary';
 import StudentMatrix from '@/components/batch/StudentMatrix';
 import StudentDetailPanel from '@/components/batch/StudentDetailPanel';
-import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
 import ErrorScreen from '@/components/ErrorScreen';
 
@@ -24,16 +23,9 @@ export default function BatchPage() {
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { addToast } = useToast();
   const router = useRouter();
   const ws = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
     return () => {
@@ -86,16 +78,6 @@ export default function BatchPage() {
       if (ws.current) ws.current.close();
     }
   };
-
-  if (authLoading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </main>
-    );
-  }
-
-  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8 md:p-12 selection:bg-indigo-500/30">
