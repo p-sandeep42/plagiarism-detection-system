@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: auradiff-backend
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    plan: free
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://plagiarism-detector-for-teachers.vercel.app
+      - key: MAX_BATCH_FILES
+        value: "30"
+      - key: WORKERS
+        value: "1"
+      - key: BATCH_WS_SECRET
+        generateValue: true   # Render auto-generates a cryptographically secure value

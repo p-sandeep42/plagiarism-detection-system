@@ -39,16 +39,20 @@ from algorithms.structural import structural_similarity
 # ---------------------------------------------------------------------------
 app = FastAPI(title="AuraDiff API")
 
+# Origins allow-list reused for both HTTP CORS and WebSocket origin check
+ALLOWED_ORIGINS: list[str] = []  # populated after env read below
+
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS — allow configured origins (defaults to permissive for dev)
-ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+_raw_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in ALLOWED_ORIGINS],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -115,7 +119,7 @@ def _validate_file(f: UploadFile) -> str:
 
 async def _read_validated(f: UploadFile) -> bytes:
     """Read file content with size validation."""
-    content = await f.read()
+    content: bytes = await f.read()  # type: ignore[assignment]
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(400, detail=f"File '{f.filename}' exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit")
     if len(content) == 0:
@@ -192,11 +196,16 @@ async def compare_files(
     total_score = _aggregate(winnowing_score, struct_score, sem_score, ext1 if ext1 == ext2 else "txt")
     highlights = _get_highlights(text1, text2)
 
+    w_score: float = float(winnowing_score)  # type: ignore[arg-type]
+    s_score: float = float(struct_score)  # type: ignore[arg-type]
+    e_score: float = float(sem_score)  # type: ignore[arg-type]
+    t_score: float = float(total_score)  # type: ignore[arg-type]
+
     score_obj = ComparisonScore(
-        winnowing_score=round(winnowing_score, 4),
-        jaccard_score=round(struct_score, 4),
-        semantic_score=round(sem_score, 4),
-        total_score=round(total_score, 4),
+        winnowing_score=round(w_score, 4),
+        jaccard_score=round(s_score, 4),
+        semantic_score=round(e_score, 4),
+        total_score=round(t_score, 4),
     )
 
     result = ComparisonResponse(
@@ -224,11 +233,13 @@ def _validate_session_token(token: str) -> bool:
 
 
 def _build_summary(student_index: int, matrix: List[List[Optional[PairScore]]], n: int) -> StudentSummary:
-    scores = [
-        matrix[student_index][j].total_score
-        for j in range(n)
-        if student_index != j and matrix[student_index][j] is not None
-    ]
+    scores: List[float] = []
+    for j in range(n):
+        if student_index == j:
+            continue
+        cell = matrix[student_index][j]
+        if cell is not None:
+            scores.append(cell.total_score)
     max_score = max(scores) if scores else 0.0
     avg_score = sum(scores) / len(scores) if scores else 0.0
 
@@ -251,11 +262,16 @@ def _run_pair_sync(text_a, text_b, type_a, type_b):
     total = _aggregate(w, s, e, type_a if type_a == type_b else "txt")
     highlights = _get_highlights(text_a, text_b)
 
+    w_f: float = float(w)  # type: ignore[arg-type]
+    s_f: float = float(s)  # type: ignore[arg-type]
+    e_f: float = float(e)  # type: ignore[arg-type]
+    t_f: float = float(total)  # type: ignore[arg-type]
+
     return PairScore(
-        winnowing_score=round(w, 4),
-        jaccard_score=round(s, 4),
-        semantic_score=round(e, 4),
-        total_score=round(total, 4),
+        winnowing_score=round(w_f, 4),
+        jaccard_score=round(s_f, 4),
+        semantic_score=round(e_f, 4),
+        total_score=round(t_f, 4),
         highlights=highlights,
     )
 
@@ -346,6 +362,11 @@ async def compare_batch(
 # ---------------------------------------------------------------------------
 @app.websocket("/ws/batch-progress")
 async def batch_progress_ws(ws: WebSocket, token: str = Query(...)):
+    # HTTP CORS headers do NOT protect WebSocket handshakes — check Origin manually
+    origin = ws.headers.get("origin", "")
+    if "*" not in ALLOWED_ORIGINS and origin not in ALLOWED_ORIGINS:
+        await ws.close(code=1008)
+        return
     if not _validate_session_token(token):
         await ws.close(code=1008)
         return
