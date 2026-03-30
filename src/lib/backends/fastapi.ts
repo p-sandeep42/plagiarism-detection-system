@@ -26,7 +26,7 @@ export class FastAPIBackend implements BackendService {
     files.forEach(f => fd.append('files', f));
     if (sessionId) fd.append('session_id', sessionId);
     
-    const res = await fetch('/api/compare-batch', {
+    const res = await fetch('/api/py/compare-batch', {
       method: 'POST',
       body: fd,
     });

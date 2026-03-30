@@ -44,9 +44,10 @@ export default function BatchPage() {
     const sessionId = Math.random().toString(36).substring(2);
     const token = process.env.NEXT_PUBLIC_BATCH_WS_SECRET || 'replace_with_random_32_char_string';
 
-    // Connect WebSocket for progress
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host.includes('localhost') ? 'localhost:8000' : window.location.host}/ws/batch-progress?token=${token}`;
+    // Connect WebSocket for progress directly to FastAPI backend
+    const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+    const wsBaseUrl = backendUrl.replace(/^http/, 'ws');
+    const wsUrl = `${wsBaseUrl}/ws/batch-progress?token=${token}`;
     
     try {
       ws.current = new WebSocket(wsUrl);
