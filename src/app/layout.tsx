@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import "@/styles/tokens.css";
-import { AuthProvider } from "@/lib/AuthContext";
 import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
@@ -64,11 +63,9 @@ export default function RootLayout({
           <div className="absolute top-0 left-1/4 h-[800px] w-[800px] rounded-full bg-indigo-900/10 blur-[120px]"></div>
           <div className="absolute bottom-0 right-1/4 h-[800px] w-[800px] rounded-full bg-cyan-900/10 blur-[120px]"></div>
         </div>
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AuthProvider>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
